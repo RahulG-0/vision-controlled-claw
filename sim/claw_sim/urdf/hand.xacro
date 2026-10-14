@@ -1,0 +1,120 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!--
+    Five-finger claw, one servo per finger.
+
+    Hand frame (`hand_base`): x along the straight fingers, y out of the palm,
+    z across the knuckles from pinky to index. Every finger joint turns about
+    z, so a positive angle curls the finger towards the palm.
+
+    A real claw of this kind pulls each finger closed with one tendon. Here
+    each finger has two or three joints, and the teleop node drives them all
+    from that finger's single servo value: joint angle = curl x upper limit.
+    The upper limits below therefore define the closed-fist pose.
+
+    Joints are named <finger>_<joint>, with the finger names used by
+    src/finger_angles.py; the teleop node relies on that prefix.
+  -->
+  <xacro:property name="finger_w" value="0.016"/>
+
+  <xacro:macro name="phalanx" params="name length width">
+    <link name="${name}">
+      <inertial>
+        <origin xyz="${length / 2} 0 0"/>
+        <mass value="0.04"/>
+        <inertia ixx="2e-5" ixy="0" ixz="0" iyy="2e-5" iyz="0" izz="2e-5"/>
+      </inertial>
+      <visual>
+        <origin xyz="${length / 2} 0 0"/>
+        <geometry><box size="${length} ${width} ${width}"/></geometry>
+        <material name="finger"/>
+      </visual>
+      <collision>
+        <origin xyz="${length / 2} 0 0"/>
+        <geometry><box size="${length} ${width} ${width}"/></geometry>
+      </collision>
+    </link>
+    <gazebo reference="${name}">
+      <mu1>1.5</mu1>
+      <mu2>1.5</mu2>
+    </gazebo>
+  </xacro:macro>
+
+  <xacro:macro name="finger_joint" params="name parent child xyz rpy:='0 0 0' axis:='0 0 1' upper effort">
+    <joint name="${name}" type="revolute">
+      <parent link="${parent}"/>
+      <child link="${child}"/>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+      <axis xyz="${axis}"/>
+      <limit lower="0" upper="${upper}" effort="${effort}" velocity="6.0"/>
+    </joint>
+    <xacro:servo joint="${name}" speed="6.0"/>
+  </xacro:macro>
+
+  <xacro:macro name="finger" params="name z l1 l2 l3">
+    <xacro:phalanx name="${name}_proximal" length="${l1}" width="${finger_w}"/>
+    <xacro:phalanx name="${name}_middle" length="${l2}" width="${finger_w}"/>
+    <xacro:phalanx name="${name}_distal" length="${l3}" width="${finger_w}"/>
+    <xacro:finger_joint name="${name}_mcp" parent="hand_base" child="${name}_proximal"
+                        xyz="0.105 0 ${z}" upper="1.5" effort="0.5"/>
+    <xacro:finger_joint name="${name}_pip" parent="${name}_proximal" child="${name}_middle"
+                        xyz="${l1} 0 0" upper="1.6" effort="0.3"/>
+    <xacro:finger_joint name="${name}_dip" parent="${name}_middle" child="${name}_distal"
+                        xyz="${l2} 0 0" upper="1.2" effort="0.15"/>
+  </xacro:macro>
+
+  <xacro:macro name="claw_hand" params="parent">
+    <!-- Flange z becomes the direction the fingers point. -->
+    <joint name="${parent}_to_hand" type="fixed">
+      <parent link="${parent}"/>
+      <child link="hand_base"/>
+      <origin rpy="0 ${-pi / 2} 0"/>
+    </joint>
+
+    <link name="hand_base">
+      <inertial>
+        <origin xyz="0.05 -0.006 0"/>
+        <mass value="0.35"/>
+        <inertia ixx="4e-4" ixy="0" ixz="0" iyy="5e-4" iyz="0" izz="3e-4"/>
+      </inertial>
+      <visual>
+        <origin xyz="0.05 -0.006 0"/>
+        <geometry><box size="0.10 0.028 0.11"/></geometry>
+        <material name="palm"/>
+      </visual>
+      <collision>
+        <origin xyz="0.05 -0.006 0"/>
+        <geometry><box size="0.10 0.028 0.11"/></geometry>
+      </collision>
+    </link>
+
+    <xacro:finger name="index" z="0.045" l1="0.050" l2="0.035" l3="0.030"/>
+    <xacro:finger name="middle" z="0.015" l1="0.055" l2="0.038" l3="0.030"/>
+    <xacro:finger name="ring" z="-0.015" l1="0.050" l2="0.035" l3="0.030"/>
+    <xacro:finger name="pinky" z="-0.045" l1="0.042" l2="0.028" l3="0.026"/>
+
+    <!--
+      The thumb stands up out of the palm, leaning back when open, and swings
+      forward to meet the fingers. It sits in the gap between the index and
+      middle fingers so the two sides can pass each other when closing on
+      something thin.
+    -->
+    <xacro:phalanx name="thumb_proximal" length="0.045" width="0.012"/>
+    <xacro:phalanx name="thumb_distal" length="0.035" width="0.012"/>
+    <xacro:finger_joint name="thumb_cmc" parent="hand_base" child="thumb_proximal"
+                        xyz="0.020 0.008 0.030" rpy="0 0 ${radians(120)}" axis="0 0 -1"
+                        upper="1.1" effort="0.5"/>
+    <xacro:finger_joint name="thumb_ip" parent="thumb_proximal" child="thumb_distal"
+                        xyz="0.045 0 0" axis="0 0 -1" upper="1.0" effort="0.25"/>
+
+    <!-- Centre of the pocket between palm, thumb and fingers: the point the arm steers. -->
+    <link name="grasp_point"/>
+    <joint name="hand_to_grasp_point" type="fixed">
+      <parent link="hand_base"/>
+      <child link="grasp_point"/>
+      <origin xyz="0.068 0.047 0"/>
+    </joint>
+  </xacro:macro>
+
+</robot>

@@ -4,3 +4,7 @@ __pycache__/
 models/
 *.mp4
 out.*
+sim/build/
+sim/install/
+sim/log/
+.pytest_cache/

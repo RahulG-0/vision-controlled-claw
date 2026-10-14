@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <material name="arm_grey"><color rgba="0.75 0.77 0.80 1"/></material>
+  <material name="arm_dark"><color rgba="0.20 0.22 0.25 1"/></material>
+  <material name="palm"><color rgba="0.15 0.16 0.18 1"/></material>
+  <material name="finger"><color rgba="0.96 0.52 0.09 1"/></material>
+
+  <!--
+    One position-controlled joint, standing in for a servo. Velocity commands
+    make the joint track its target without PID tuning, and the push it can
+    exert is capped by the joint's effort limit, which is what bounds the grip
+    force when a finger closes on an object.
+  -->
+  <xacro:macro name="servo" params="joint speed">
+    <gazebo>
+      <plugin filename="gz-sim-joint-position-controller-system"
+              name="gz::sim::systems::JointPositionController">
+        <joint_name>${joint}</joint_name>
+        <topic>/claw/${joint}/cmd</topic>
+        <use_velocity_commands>true</use_velocity_commands>
+        <cmd_max>${speed}</cmd_max>
+        <cmd_min>${-speed}</cmd_min>
+      </plugin>
+    </gazebo>
+  </xacro:macro>
+
+</robot>

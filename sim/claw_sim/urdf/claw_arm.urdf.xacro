@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<robot name="claw_arm" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:include filename="common.xacro"/>
+  <xacro:include filename="arm7r.xacro"/>
+  <xacro:include filename="hand.xacro"/>
+
+  <xacro:arm7r/>
+  <xacro:claw_hand parent="tool0"/>
+
+  <gazebo>
+    <plugin filename="gz-sim-joint-state-publisher-system"
+            name="gz::sim::systems::JointStatePublisher">
+      <topic>/claw/joint_states</topic>
+    </plugin>
+  </gazebo>
+
+</robot>

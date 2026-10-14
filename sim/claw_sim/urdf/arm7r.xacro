@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!--
+    Generic 7R arm: shoulder (yaw, pitch, yaw), elbow (pitch), wrist (yaw,
+    pitch, yaw), about 0.8 m of reach. It is a placeholder. The teleop node
+    reads the kinematics from the URDF, so another 7R arm can replace this
+    file as long as it ends in a link called `tool0` whose z axis points out
+    of the flange.
+  -->
+  <xacro:macro name="arm_link" params="name length radius mass material">
+    <link name="${name}">
+      <inertial>
+        <origin xyz="0 0 ${length / 2}"/>
+        <mass value="${mass}"/>
+        <inertia ixx="${mass * (3 * radius * radius + length * length) / 12}" ixy="0" ixz="0"
+                 iyy="${mass * (3 * radius * radius + length * length) / 12}" iyz="0"
+                 izz="${mass * radius * radius / 2}"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 ${length / 2}"/>
+        <geometry><cylinder radius="${radius}" length="${length}"/></geometry>
+        <material name="${material}"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 ${length / 2}"/>
+        <geometry><cylinder radius="${radius}" length="${length}"/></geometry>
+      </collision>
+    </link>
+  </xacro:macro>
+
+  <xacro:macro name="arm_joint" params="name parent child z axis lower upper">
+    <joint name="${name}" type="revolute">
+      <parent link="${parent}"/>
+      <child link="${child}"/>
+      <origin xyz="0 0 ${z}"/>
+      <axis xyz="${axis}"/>
+      <limit lower="${lower}" upper="${upper}" effort="300" velocity="2.5"/>
+    </joint>
+    <xacro:servo joint="${name}" speed="2.5"/>
+  </xacro:macro>
+
+  <xacro:macro name="arm7r">
+    <link name="world"/>
+    <joint name="world_to_base" type="fixed">
+      <parent link="world"/>
+      <child link="base_link"/>
+    </joint>
+
+    <xacro:arm_link name="base_link" length="0.15" radius="0.075" mass="6.0" material="arm_dark"/>
+    <xacro:arm_link name="link1" length="0.19" radius="0.060" mass="4.0" material="arm_grey"/>
+    <xacro:arm_link name="link2" length="0.20" radius="0.055" mass="4.0" material="arm_dark"/>
+    <xacro:arm_link name="link3" length="0.20" radius="0.050" mass="3.0" material="arm_grey"/>
+    <xacro:arm_link name="link4" length="0.20" radius="0.045" mass="3.0" material="arm_dark"/>
+    <xacro:arm_link name="link5" length="0.20" radius="0.040" mass="2.0" material="arm_grey"/>
+    <xacro:arm_link name="link6" length="0.08" radius="0.038" mass="1.5" material="arm_dark"/>
+    <xacro:arm_link name="link7" length="0.045" radius="0.035" mass="0.5" material="arm_grey"/>
+
+    <xacro:arm_joint name="joint1" parent="base_link" child="link1" z="0.15" axis="0 0 1" lower="-2.9" upper="2.9"/>
+    <xacro:arm_joint name="joint2" parent="link1" child="link2" z="0.19" axis="0 1 0" lower="-2.3" upper="2.3"/>
+    <xacro:arm_joint name="joint3" parent="link2" child="link3" z="0.20" axis="0 0 1" lower="-2.9" upper="2.9"/>
+    <xacro:arm_joint name="joint4" parent="link3" child="link4" z="0.20" axis="0 1 0" lower="-2.3" upper="2.3"/>
+    <xacro:arm_joint name="joint5" parent="link4" child="link5" z="0.20" axis="0 0 1" lower="-2.9" upper="2.9"/>
+    <xacro:arm_joint name="joint6" parent="link5" child="link6" z="0.20" axis="0 1 0" lower="-2.3" upper="2.3"/>
+    <xacro:arm_joint name="joint7" parent="link6" child="link7" z="0.08" axis="0 0 1" lower="-4.7" upper="4.7"/>
+
+    <link name="tool0"/>
+    <joint name="link7_to_tool0" type="fixed">
+      <parent link="link7"/>
+      <child link="tool0"/>
+      <origin xyz="0 0 0.045"/>
+    </joint>
+  </xacro:macro>
+
+</robot>
